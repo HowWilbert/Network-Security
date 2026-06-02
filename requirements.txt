@@ -5,3 +5,7 @@ seaborn
 ipykernel
 scikit-learn
 python-dotenv
+pymongo 
+certifi
+
+-e .
