@@ -28,7 +28,7 @@ class DataValidation:
         
     def validate_number_of_columns(self,dataframe:pd.DataFrame)->bool:
         try:
-            number_of_columns=len(self._schema_config)
+            number_of_columns=len(self._schema_config.get('columns', []))
             logging.info(f"Required number of columns:{number_of_columns}")
             logging.info(f"Data frame has columns:{len(dataframe.columns)}")
             if len(dataframe.columns)==number_of_columns:
@@ -36,8 +36,27 @@ class DataValidation:
             return False
         except Exception as e:
             raise NetworkSecurityException(e,sys)
+    
+    def validate_number_of_numerical_columns(self,dataframe:pd.DataFrame)->bool:
+        try:
+            number_of_numerical_columns = len(self._schema_config.get('numerical_columns', []))
+            logging.info(f"Required number of numerical columns:{number_of_numerical_columns}")
+
+            # count numeric dtype columns in the dataframe
+            numeric_count = dataframe.select_dtypes(include=['number']).shape[1]
+            logging.info(f"DataFrame numeric columns count: {numeric_count}")
+
+            return numeric_count == number_of_numerical_columns
+        except Exception as e:
+            raise NetworkSecurityException(e,sys)
         
     def detect_dataset_drift(self,base_df,current_df,threshold=0.05)->bool:
+        '''
+        confidance interval - 95% ( threshold )
+        
+        ks_2samp -> used to compare the distribution of 2 columns.
+        '''
+        
         try:
             status=True
             report={}
@@ -84,6 +103,17 @@ class DataValidation:
             if not status:
                 error_message=f"Test dataframe does not contain all columns.\n"   
 
+
+            ## validate number of numerical columns
+            
+            status_n = self.validate_number_of_numerical_columns(dataframe=train_dataframe)
+            if not status_n:
+                error_message=f"Train dataframe does not contain all numerical columns.\n"
+            status_n = self.validate_number_of_numerical_columns(dataframe=test_dataframe)
+            if not status_n:
+                error_message=f"Test dataframe does not contain all numerical columns.\n"  
+            
+            
             ## lets check datadrift
             status=self.detect_dataset_drift(base_df=train_dataframe,current_df=test_dataframe)
             dir_path=os.path.dirname(self.data_validation_config.valid_train_file_path)
