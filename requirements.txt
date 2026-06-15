@@ -9,6 +9,5 @@ pymongo
 certifi
 pymongo[srv]==3.12
 pyaml
-
-
-# -e .
+mlflow
+# -e .  
