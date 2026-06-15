@@ -10,4 +10,9 @@ certifi
 pymongo[srv]==3.12
 pyaml
 mlflow
+dagshub
+certifi
+fastapi
+uvicorn
+python-multipart
 # -e .  

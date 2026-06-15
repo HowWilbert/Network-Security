@@ -11,6 +11,9 @@ from networksequrity.utils.ml_utils.model.estimator import NetworkModel
 from networksequrity.utils.main_utils.utils import save_object,load_object
 from networksequrity.utils.main_utils.utils import load_numpy_array_data,evaluate_models
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import r2_score
 from sklearn.neighbors import KNeighborsClassifier
@@ -22,6 +25,14 @@ from sklearn.ensemble import (
 )
 import mlflow
 
+
+repo_owner = os.getenv('REPO_OWNER_NAME')
+repo_name = os.getenv('REPO_NAME')
+
+import dagshub
+dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+
+
 class ModelTrainer:
     def __init__(self,model_trainer_config:ModelTrainerConfig,data_transformation_artifact:DataTransformationArtifact):
         try:
@@ -32,8 +43,8 @@ class ModelTrainer:
     
                 
     def track_mlflow(self,best_model,classificationmetric):
-        logging.info("inside ML Flow")
-        mlflow.set_tracking_uri("sqlite:///mlflow.db")
+        logging.info("inside ML Flow")                            
+        # mlflow.set_tracking_uri("sqlite:///mlflow.db")          # for saving locally
         mlflow.set_experiment("NetworkSecurity")
         with mlflow.start_run():
             f1_score = classificationmetric.f1_score
