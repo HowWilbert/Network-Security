@@ -53,12 +53,21 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         run: |
           set -euo pipefail
-          if ! aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --no-cli-pager > /dev/null; then
+          describe_error_file="$(mktemp)"
+          if aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --no-cli-pager > /dev/null 2>"$describe_error_file"; then
+            rm -f "$describe_error_file"
+          elif grep -q "RepositoryNotFoundException" "$describe_error_file"; then
             echo "ECR repository '$ECR_REPOSITORY' not found. Creating it..."
             aws ecr create-repository --repository-name "$ECR_REPOSITORY" --no-cli-pager || {
               echo "Failed to create ECR repository '$ECR_REPOSITORY'."
               exit 1
             }
+            rm -f "$describe_error_file"
+          else
+            cat "$describe_error_file"
+            rm -f "$describe_error_file"
+            echo "Failed to verify ECR repository '$ECR_REPOSITORY'."
+            exit 1
           fi
 
       - name: Build, tag, and push image to Amazon ECR
