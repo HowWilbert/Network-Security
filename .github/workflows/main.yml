@@ -52,8 +52,10 @@ jobs:
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         run: |
-          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" > /dev/null || \
-          aws ecr create-repository --repository-name "$ECR_REPOSITORY"
+          if ! aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --no-cli-pager > /dev/null; then
+            echo "ECR repository '$ECR_REPOSITORY' not found. Creating it..."
+            aws ecr create-repository --repository-name "$ECR_REPOSITORY" --no-cli-pager
+          fi
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
