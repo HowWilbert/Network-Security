@@ -25,12 +25,7 @@ from sklearn.ensemble import (
 )
 import mlflow
 
-
-repo_owner = os.getenv('REPO_OWNER_NAME')
-repo_name = os.getenv('REPO_NAME')
-
 import dagshub
-dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
 
 
 class ModelTrainer:
@@ -45,6 +40,8 @@ class ModelTrainer:
     def track_mlflow(self,best_model,classificationmetric):
         logging.info("inside ML Flow")                            
         # mlflow.set_tracking_uri("sqlite:///mlflow.db")          # for saving locally
+        import dagshub
+        dagshub.init(repo_owner='HowWilbert', repo_name='Network-Security', mlflow=True)
         mlflow.set_experiment("NetworkSecurity")
         with mlflow.start_run():
             f1_score = classificationmetric.f1_score
