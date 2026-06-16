@@ -1,3 +1,4 @@
+from networksequrity.constant.training_pipeline import TRAINING_BUCKET_NAME
 from networksequrity.components.data_ingestion import DataIngestion
 from networksequrity.components.data_validation import DataValidation
 from networksequrity.components.data_transformation import DataTransformation
@@ -25,9 +26,12 @@ from networksequrity.entity.artifact_entity import (
     ModelTrainerArtifact
 )
 
+from networksequrity.cloud.s3_syncer import S3Sync
+
 class TrainingPipeline:
     def __init__(self):
         self.training_pipeline_config = TrainingPipelineConfig()
+        self.S3sync = S3Sync()
     
     def start_data_ingestion(self)->DataIngestionArtifact:
         try:
@@ -90,6 +94,28 @@ class TrainingPipeline:
         except Exception as e:
             # logging.error(NetworkSecurityException(e,sys))
             raise NetworkSecurityException(e,sys)
+    # send local artifact to S3 bucket
+    def sync_artifact_to_s3(self):
+        '''
+        sending all the artifacts( data ingestion , validation , transformation , model trainer Artifact to S3 bucket ( cloud storage))
+        '''
+        try:
+            aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/Artifacts/{self.training_pipeline_config.timestamp}"
+            self.S3sync.sync_folder_to_s3(folder_name=self.training_pipeline_config.artifact_dir,aws_bucket_url=aws_bucket_url)
+            logging.info("Artifacts synced to S3")
+        except Exception as e:
+            raise NetworkSecurityException(e,sys)
+    #send local model to S3 bucket
+    def sync_model_to_s3(self):
+        '''
+        sending the model to the cloud
+        '''
+        try:
+            aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/final_model/{self.training_pipeline_config.timestamp}"
+            self.S3sync.sync_folder_to_s3(folder_name=self.training_pipeline_config.model_dir,aws_bucket_url=aws_bucket_url)
+            logging.info("Model synced to S3")
+        except Exception as e:
+            raise NetworkSecurityException(e,sys)
     
     def run_pipeline(self):
         '''
@@ -102,6 +128,8 @@ class TrainingPipeline:
             data_transformation_artifact = self.start_data_transformation(data_validation_artifact=data_validation_artifact)
             model_trainer_artifact = self.start_model_training(data_transformation_artifact=data_transformation_artifact)
             
+            self.sync_model_to_s3()
+            self.sync_artifact_to_s3()
             return model_trainer_artifact
             
         except Exception as e:
