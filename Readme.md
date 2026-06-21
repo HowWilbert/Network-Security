@@ -1,24 +1,118 @@
-# 🛡️ Network Security — ML-Based Phishing & Threat Detection System
+# 🛡️ Your Bank Just Called — But Was It Really Them? Detecting Phishing Attacks with Machine Learning
 
-A production-grade, end-to-end Machine Learning system for **network intrusion and phishing detection**, featuring a modular ML pipeline, FastAPI inference server, MLflow experiment tracking, and a fully automated CI/CD pipeline deploying to AWS via Docker and GitHub Actions.
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonaws&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Deployed-brightgreen?style=for-the-badge)
+
+**An end-to-end MLOps pipeline that detects phishing websites before they steal your data.**
+
+[Getting Started](#-getting-started) · [Architecture](#-system-architecture) · [Results](#-model-performance) · [Deployment](#-deployment)
+
+</div>
+
+---
+
+## 📌 The Problem
+
+> **Every 11 seconds**, a new phishing attack is launched. In 2024 alone, phishing was responsible for **over $10 billion in losses** worldwide, and **36% of all data breaches** involved phishing.
+
+Traditional rule-based filters catch known threats — but attackers are evolving faster than the rules. They use **URL shorteners, IP-based addresses, suspicious iframes, fake SSL certificates**, and **domain age manipulation** to bypass conventional detection.
+
+**This project solves that.** By analyzing **30 real-time website features** — from URL structure and domain metadata to traffic patterns and page behavior — this system learns the fingerprint of a phishing site and flags it before a user ever clicks.
+
+Whether it's a fake banking portal, a spoofed login page, or a malicious redirect, the model catches it with **97.4% F1-score on unseen data**.
+
+---
+
+## 🎯 What This Project Does
+
+| Capability | Description |
+|---|---|
+| 🔍 **Phishing Detection** | Classifies websites as legitimate or phishing based on 30 extracted features |
+| 📊 **Automated ML Pipeline** | End-to-end pipeline: Ingestion → Validation → Transformation → Training |
+| 🧪 **Experiment Tracking** | All model runs tracked via MLflow + DagsHub |
+| 🔄 **Data Drift Detection** | Automatically detects distribution shifts using the KS-2 sample test |
+| ☁️ **Cloud-Native** | Model artifacts synced to AWS S3; deployed on AWS EC2 via Docker |
+| 🌐 **REST API** | FastAPI-based prediction endpoint — upload a CSV and get results instantly |
+| 🔁 **CI/CD** | GitHub Actions pipeline: lint → build → push to ECR → deploy to EC2 |
+
+---
+
+## 🏗️ System Architecture
+
+```
+                          ┌──────────────────────────────────────────┐
+                          │            GitHub Actions CI/CD          │
+                          │  (Lint → Build → Push ECR → Deploy EC2)  │
+                          └──────────────┬───────────────────────────┘
+                                         │
+┌──────────────┐    ┌────────────┐    ┌──┴───────────┐    ┌──────────────┐
+│   MongoDB    │───▶│   Data     │───▶│    Data      │───▶│    Data      │
+│  (Raw Data)  │    │ Ingestion  │    │  Validation  │    │Transformation│
+└──────────────┘    └────────────┘    └──────────────┘    └──────┬───────┘
+                                                                │
+                    ┌────────────┐    ┌──────────────┐    ┌─────┴────────┐
+                    │  FastAPI   │◀───│  AWS S3 +    │◀───│    Model     │
+                    │  Predict   │    │  ECR + EC2   │    │   Trainer    │
+                    │  Endpoint  │    │  (Deploy)    │    │  (Best Model)│
+                    └────────────┘    └──────────────┘    └──────────────┘
+                          │                                      │
+                          │           ┌──────────────┐           │
+                          └──────────▶│   MLflow +   │◀──────────┘
+                                      │   DagsHub    │
+                                      │  (Tracking)  │
+                                      └──────────────┘
+```
+
+---
+
+## 📁 Project Structure
+
+```
+NetworkSecurity/
+│
+├── networksequrity/                # Core ML package
+│   ├── components/                 # Pipeline components
+│   │   ├── data_ingestion.py       #   → Fetch data from MongoDB, train-test split
+│   │   ├── data_validation.py      #   → Schema checks, column validation, drift detection
+│   │   ├── data_transformation.py  #   → KNN Imputer for missing values
+│   │   └── model_trainer.py        #   → Train 5 classifiers, hyperparameter tuning, MLflow
+│   ├── pipeline/
+│   │   └── training_pipeline.py    # Orchestrates the full training workflow
+│   ├── cloud/
+│   │   └── s3_syncer.py            # Sync artifacts & models to AWS S3
+│   ├── entity/                     # Config & artifact dataclasses
+│   ├── constant/                   # Constants (paths, params, thresholds)
+│   ├── exception/                  # Custom exception handling
+│   ├── logging/                    # Structured logging
+│   └── utils/                      # ML utilities, metrics, model wrapper
+│
+├── app.py                          # FastAPI application (train & predict endpoints)
+├── main.py                         # Standalone training script
+├── push_data.py                    # Push CSV data to MongoDB
+├── DockerFile                      # Container definition (Python 3.12-slim)
+├── requirements.txt                # Python dependencies
+├── setup.py                        # Package configuration
+├── data_schema/schema.yaml         # Column schema (30 features + target)
+├── Network_data/phisingData.csv    # Raw phishing dataset
+├── templates/table.html            # Jinja2 template for prediction results
+│
+├── .github/workflows/main.yml      # CI/CD: GitHub Actions → ECR → EC2
+└── logs/                           # Training run logs with metrics
+```
 
 ---
 
 ## 📊 Model Performance
 
-Results from the latest training run:
-
-| Metric | Train | Test |
-|---|---|---|
-| **F1 Score** | 0.9919 | 0.9694 |
-| **Precision** | 0.9886 | 0.9662 |
-| **Recall** | 0.9954 | 0.9727 |
-
-> The model generalizes exceptionally well with a train-test F1 gap of only **~0.02**, indicating minimal overfitting. A test F1 of **0.9694** demonstrates strong real-world threat detection capability.
-
-### Models Evaluated
-
-The pipeline performs hyperparameter-tuned model selection across 5 classifiers:
+The pipeline evaluates **5 classifiers** with hyperparameter tuning via `GridSearchCV` and selects the best performer:
 
 | Model | Hyperparameters Tuned |
 |---|---|
@@ -28,232 +122,136 @@ The pipeline performs hyperparameter-tuned model selection across 5 classifiers:
 | Logistic Regression | Default |
 | AdaBoost | `learning_rate`, `n_estimators` |
 
-The best model is automatically selected based on the highest evaluation score and tracked via **MLflow + DagsHub**.
+### 🏆 Best Model Results (from training logs)
+
+<table>
+<tr>
+<th></th>
+<th colspan="3" align="center">Training Set</th>
+<th colspan="3" align="center">Test Set</th>
+</tr>
+<tr>
+<th>Run</th>
+<th>F1-Score</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1-Score</th>
+<th>Precision</th>
+<th>Recall</th>
+</tr>
+<tr>
+<td><b>Run 1</b></td>
+<td>0.9912</td>
+<td>0.9888</td>
+<td>0.9936</td>
+<td>0.9766</td>
+<td>0.9702</td>
+<td>0.9832</td>
+</tr>
+<tr>
+<td><b>Run 2</b></td>
+<td>0.9920</td>
+<td>0.9895</td>
+<td>0.9945</td>
+<td>0.9710</td>
+<td>0.9557</td>
+<td>0.9869</td>
+</tr>
+<tr>
+<td><b>Run 3</b></td>
+<td>0.9915</td>
+<td>0.9896</td>
+<td>0.9934</td>
+<td>0.9738</td>
+<td>0.9674</td>
+<td>0.9803</td>
+</tr>
+</table>
+
+> **Key Takeaway:** The best model consistently achieves **~99.1% F1-score on training data** and **~97.4% F1-score on the test set** — with recall above **98%**, meaning almost no phishing site goes undetected.
 
 ---
 
-## 🏗️ Architecture
+## 🔬 Feature Engineering
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        GitHub (main branch)                        │
-│                         Push triggers CI/CD                        │
-└───────────────────────────────┬─────────────────────────────────────┘
-                                │
-                    ┌───────────▼───────────┐
-                    │   GitHub Actions CI   │
-                    │  (Lint + Unit Tests)  │
-                    └───────────┬───────────┘
-                                │
-                    ┌───────────▼───────────┐
-                    │  Continuous Delivery  │
-                    │  Build Docker Image   │
-                    │  Push to AWS ECR      │
-                    └───────────┬───────────┘
-                                │
-                    ┌───────────▼───────────┐
-                    │ Continuous Deployment │
-                    │  Self-Hosted Runner   │
-                    │  (EC2 Instance)       │
-                    │  Pull & Run Container │
-                    └───────────┬───────────┘
-                                │
-              ┌─────────────────▼─────────────────┐
-              │         FastAPI Server             │
-              │  http://<EC2-IP>:8000/docs         │
-              │                                    │
-              │  GET  /        → Redirect to docs  │
-              │  GET  /train   → Run ML Pipeline   │
-              │  POST /predict → Upload CSV → Get  │
-              │                  predictions       │
-              └─────────────────┬─────────────────┘
-                                │
-          ┌─────────────────────┼─────────────────────┐
-          │                     │                     │
-  ┌───────▼───────┐   ┌────────▼────────┐   ┌────────▼────────┐
-  │   MongoDB     │   │   AWS S3        │   │  DagsHub/MLflow │
-  │  (Raw Data)   │   │  (Artifacts &   │   │  (Experiment    │
-  │               │   │   Final Model)  │   │   Tracking)     │
-  └───────────────┘   └─────────────────┘   └─────────────────┘
-```
+The model uses **30 handcrafted features** extracted from website characteristics:
 
----
-
-## 🔧 Tech Stack
-
-| Category | Tools |
+| Category | Features |
 |---|---|
-| **Language** | Python 3.12 |
-| **ML & Data** | Scikit-learn, Pandas, NumPy |
-| **Imputation** | KNNImputer (k=3, uniform weights) |
-| **API Framework** | FastAPI + Uvicorn |
-| **Experiment Tracking** | MLflow + DagsHub |
-| **Data Storage** | MongoDB Atlas |
-| **Cloud Storage** | AWS S3 |
-| **Container Registry** | AWS ECR |
-| **Compute** | AWS EC2 (Self-Hosted Runner) |
-| **Containerization** | Docker (Python 3.12 slim-bookworm) |
-| **CI/CD** | GitHub Actions (3-stage pipeline) |
-| **Version Control** | Git, GitHub |
+| **URL Analysis** | `having_IP_Address`, `URL_Length`, `Shortining_Service`, `having_At_Symbol`, `double_slash_redirecting`, `Prefix_Suffix`, `having_Sub_Domain` |
+| **Security Signals** | `SSLfinal_State`, `HTTPS_token`, `Domain_registeration_length` |
+| **Page Behavior** | `Redirect`, `on_mouseover`, `RightClick`, `popUpWidnow`, `Iframe` |
+| **External References** | `Request_URL`, `URL_of_Anchor`, `Links_in_tags`, `SFH`, `Submitting_to_email`, `Abnormal_URL`, `Favicon` |
+| **Domain Intelligence** | `age_of_domain`, `DNSRecord`, `web_traffic`, `Page_Rank`, `Google_Index`, `Links_pointing_to_page`, `Statistical_report`, `port` |
+
+Missing values are handled using **KNN Imputer** (k=3, uniform weights).
 
 ---
 
-## 📁 Project Structure
+## 🚀 Deployment
 
-```
-Network-Security/
-│
-├── .github/
-│   └── workflows/
-│       └── main.yml                    # CI/CD pipeline (3 jobs)
-│
-├── networksequrity/                    # Core ML package
-│   ├── components/
-│   │   ├── data_ingestion.py           # MongoDB → Train/Test split
-│   │   ├── data_validation.py          # Schema validation + drift report
-│   │   ├── data_transformation.py      # KNN imputation + preprocessing
-│   │   └── model_trainer.py            # Model selection + MLflow tracking
-│   ├── cloud/
-│   │   └── s3_syncer.py                # AWS S3 upload/download
-│   ├── constant/
-│   │   └── training_pipeline/
-│   │       └── __init__.py             # All pipeline constants & thresholds
-│   ├── entity/
-│   │   ├── config_entity.py            # Pipeline config dataclasses
-│   │   └── artifact_entity.py          # Artifact dataclasses
-│   ├── exception/
-│   │   └── exception.py                # Custom exception with traceback
-│   ├── logging/
-│   │   └── logger.py                   # Structured logging
-│   ├── pipeline/
-│   │   └── training_pipeline.py        # Orchestrates all pipeline stages
-│   └── utils/
-│       ├── main_utils/
-│       │   └── utils.py                # Save/load objects, evaluate models
-│       └── ml_utils/
-│           ├── metric/
-│           │   └── classification_metric.py
-│           └── model/
-│               └── estimator.py        # NetworkModel wrapper
-│
-├── Network_data/                       # Raw phishing dataset
-├── data_schema/                        # Schema definitions (YAML)
-├── templates/                          # Jinja2 HTML templates for FastAPI
-├── prediction_output/                  # CSV prediction results
-│
-├── app.py                              # FastAPI application entry point
-├── main.py                             # Local pipeline runner
-├── push_data.py                        # Load CSV data into MongoDB
-├── DockerFile                          # Docker container configuration
-├── requirements.txt                    # Python dependencies
-├── setup.py                            # Package configuration
-└── README.md
-```
+### ✅ Current Status: **DEPLOYED & LIVE**
 
----
+The application is fully deployed and accessible using the following infrastructure:
 
-## 🔄 ML Pipeline Stages
-
-### 1. Data Ingestion
-- Connects to **MongoDB Atlas** and pulls the raw network traffic dataset
-- Performs an **80/20 train-test split**
-- Exports file paths as `DataIngestionArtifact`
-
-### 2. Data Validation
-- Validates ingested data against a predefined YAML schema
-- Checks for required **31 numerical columns** in both train and test sets
-- Generates a **drift report** comparing train/test distributions
-- Flags invalid data and routes it to a separate directory
-
-### 3. Data Transformation
-- Applies **KNN Imputation** (k=3, uniform weights) to handle missing values
-- Preserves feature relationships better than mean/median imputation
-- Serializes the fitted preprocessor (`preprocessor.pkl`) for reuse during inference
-- Outputs transformed data as `.npy` arrays
-
-### 4. Model Training
-- Trains and evaluates **5 classifiers** with hyperparameter tuning via `GridSearchCV`
-- Automatically selects the **best performing model** based on evaluation score
-- Tracks all experiments (F1, Precision, Recall) to **MLflow via DagsHub**
-- Saves the final model (`model.pkl`) and pushes artifacts to **AWS S3**
-- Enforces a minimum expected accuracy threshold of **0.6**
-- Rejects models with train-test performance gap exceeding **0.05**
-
----
-
-## 🌐 API Endpoints
-
-The application exposes a **FastAPI** server with the following endpoints:
-
-| Method | Endpoint | Description |
+| Component | Technology | Status |
 |---|---|---|
-| `GET` | `/` | Redirects to `/docs` (Swagger UI) |
-| `GET` | `/docs` | Interactive API documentation |
-| `GET` | `/train` | Triggers the full ML training pipeline |
-| `POST` | `/predict` | Upload a CSV file → returns predictions as an HTML table |
+| **Containerization** | Docker (Python 3.12-slim) | ✅ Running |
+| **Container Registry** | AWS ECR (Elastic Container Registry) | ✅ Active |
+| **Compute** | AWS EC2 (Self-hosted runner) | ✅ Live |
+| **Storage** | AWS S3 (Model artifacts & training data) | ✅ Synced |
+| **CI/CD** | GitHub Actions (3-stage pipeline) | ✅ Automated |
+| **Experiment Tracking** | MLflow via DagsHub | ✅ Tracking |
+| **Database** | MongoDB Atlas | ✅ Connected |
 
-### Prediction Flow
-1. Upload a CSV file with 30 network traffic features
-2. The API loads the trained preprocessor and model from `final_model/`
-3. Applies KNN imputation and generates predictions
-4. Returns an HTML table with a new `predicted_column` (0 = Safe, 1 = Threat)
-5. Saves results to `prediction_output/output.csv`
+### CI/CD Pipeline Flow
 
----
+```
+Push to main → GitHub Actions triggers:
 
-## 🚀 CI/CD Pipeline
+  1️⃣  Continuous Integration
+      └── Lint code → Run unit tests
 
-The project uses a **3-stage GitHub Actions pipeline** triggered on every push to `main`:
+  2️⃣  Continuous Delivery
+      └── Configure AWS → Login to ECR → Build Docker image → Push to ECR
 
-### Stage 1: Continuous Integration (`ubuntu-latest`)
-- Checks out code
-- Runs linting
-- Runs unit tests
-
-### Stage 2: Continuous Delivery (`ubuntu-latest`)
-- Configures AWS credentials
-- Logs into **Amazon ECR**
-- Auto-creates the ECR repository if it doesn't exist
-- Builds, tags, and pushes Docker image to ECR
-
-### Stage 3: Continuous Deployment (`self-hosted` EC2 runner)
-- Logs into ECR from the EC2 instance
-- **Stops** the running container (zero-downtime preparation)
-- **Prunes** all unused Docker images (`docker system prune -af`) to prevent disk overflow
-- **Pulls** the latest image from ECR
-- **Runs** the new container on port `8000`
-
-> **Note:** The pipeline is designed for small EC2 instances (e.g., AWS Free Tier 8GB). The aggressive prune-before-pull strategy ensures the server never runs out of disk space.
+  3️⃣  Continuous Deployment (Self-hosted EC2 runner)
+      └── Pull image from ECR → Stop old container → Run new container on port 8000
+```
 
 ---
 
 ## 🛠️ Getting Started
 
 ### Prerequisites
-- Python 3.10+
-- Docker
-- MongoDB Atlas account (or local MongoDB)
-- AWS Account with IAM credentials (for S3, ECR, EC2)
 
-### Local Installation
+- Python 3.12+
+- MongoDB Atlas account (or local MongoDB)
+- AWS account (for S3 and ECR)
+- Docker (optional, for containerized deployment)
+
+### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/HowWilbert/Network-Security.git
 cd Network-Security
+
+# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Environment Variables
+### Configuration
 
-Create a `.env` file in the project root:
+Create a `.env` file in the root directory:
 
 ```env
+MONGO_DB_URL=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/
 MONGODB_URL_KEY=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/
-AWS_ACCESS_KEY_ID=<your-aws-access-key>
-AWS_SECRET_ACCESS_KEY=<your-aws-secret-key>
-AWS_REGION=us-east-1
 ```
 
 ### Push Data to MongoDB
@@ -262,122 +260,87 @@ AWS_REGION=us-east-1
 python push_data.py
 ```
 
-### Run the Training Pipeline (Local)
+### Run Training Pipeline
 
 ```bash
 python main.py
 ```
 
-This triggers the full pipeline: Data Ingestion → Data Validation → Data Transformation → Model Training.
-
-### Run the FastAPI Server (Local)
+### Launch the API Server
 
 ```bash
 python app.py
 ```
 
-Then visit: `http://localhost:8000/docs`
+The API will be live at `http://localhost:8000`.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Redirects to interactive API docs |
+| `GET` | `/train` | Triggers the full training pipeline |
+| `POST` | `/predict` | Upload a CSV file → Get phishing predictions |
+
+---
+
+## 🧪 Experiment Tracking
+
+All training experiments are tracked on **[DagsHub MLflow](https://dagshub.com/HowWilbert/Network-Security)**, including:
+
+- Model hyperparameters
+- F1-score, Precision, Recall (train + test)
+- Serialized model artifacts
+- Run comparisons across experiments
 
 ---
 
 ## 🐳 Docker
 
-### Build
+Build and run locally:
 
 ```bash
 docker build -t network-security .
+docker run -d -p 8000:8000 --name networksecurity network-security
 ```
 
-### Run
-
-```bash
-docker run -d -p 8000:8000 \
-  -e AWS_ACCESS_KEY_ID=<key> \
-  -e AWS_SECRET_ACCESS_KEY=<secret> \
-  -e AWS_REGION=us-east-1 \
-  network-security
-```
-
-Then visit: `http://localhost:8000/docs`
-
 ---
 
-## ☁️ AWS Infrastructure
+## 📦 Tech Stack
 
-| Service | Purpose |
+| Layer | Technologies |
 |---|---|
-| **EC2** | Hosts the self-hosted GitHub Actions runner and serves the Docker container |
-| **ECR** | Stores versioned Docker images |
-| **S3** | Stores pipeline artifacts and trained models (`s3://netwworksecurity-743220303037-us-east-1-an/`) |
-| **IAM** | Manages access credentials for ECR, S3, and EC2 |
-
-### EC2 Security Group (Inbound Rules)
-
-| Type | Port | Source |
-|---|---|---|
-| SSH | 22 | 0.0.0.0/0 |
-| HTTP | 80 | 0.0.0.0/0 |
-| HTTPS | 443 | 0.0.0.0/0 |
-| Custom TCP | 8000 | 0.0.0.0/0 |
-
----
-
-## 📈 Experiment Tracking
-
-All training experiments are tracked via **MLflow** integrated with **DagsHub**:
-
-- **Metrics logged:** F1 Score, Precision, Recall (for both train and test sets)
-- **Models logged:** The best-performing sklearn model is serialized and versioned
-- **Dashboard:** [DagsHub Repository](https://dagshub.com/HowWilbert/Network-Security)
-
----
-
-## 🗄️ Dataset
-
-The project uses a **phishing/network intrusion dataset** with:
-- **31 numerical features** representing packet-level and flow-level network attributes
-- **Binary target** (`Result`): 1 = Phishing/Malicious, 0 = Legitimate
-- Data is stored in MongoDB Atlas (database: `ANSHBIRE`, collection: `NetworkData`)
-- Schema enforced via `data_schema/schema.yaml` during validation
-
----
-
-## 🧠 Key Design Decisions
-
-| Decision | Rationale |
-|---|---|
-| **Config-driven pipeline** | All paths, thresholds, and parameters are centralized in `config_entity.py` and `training_pipeline/__init__.py`, making the pipeline reproducible and easy to tune |
-| **KNN Imputation (k=3)** | Preserves feature relationships in network data better than mean/median imputation |
-| **Artifact versioning** | All outputs (preprocessor, model, data) are saved under timestamped directories (`Artifacts/<timestamp>/`) for full run traceability |
-| **Lazy DagsHub initialization** | `dagshub.init()` runs only during model training, not at import time — prevents crashes in Docker containers that lack a `.git` directory |
-| **Prune-before-pull deployment** | Aggressively cleans Docker images before pulling new ones to prevent disk overflow on small EC2 instances |
-| **Custom exception handling** | `NetworkSecurityException` wraps all errors with file name, line number, and traceback for clean debugging |
-| **Structured logging** | Every pipeline stage logs entry/exit with timestamps, enabling easy monitoring in production |
-
----
-
-## 📋 GitHub Secrets Required
-
-To run the CI/CD pipeline, configure these secrets in your GitHub repository (`Settings → Secrets and variables → Actions`):
-
-| Secret | Description |
-|---|---|
-| `AWS_ACCESS_KEY_ID` | IAM user access key |
-| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
-| `AWS_REGION` | AWS region (e.g., `us-east-1`) |
-| `ECR_REPOSITORY_NAME` | ECR repository name (e.g., `networkssecurity`) |
+| **ML Framework** | scikit-learn (Random Forest, Gradient Boosting, AdaBoost, Decision Tree, Logistic Regression) |
+| **Data Processing** | pandas, NumPy, KNN Imputer |
+| **Experiment Tracking** | MLflow, DagsHub |
+| **API** | FastAPI, Uvicorn |
+| **Database** | MongoDB Atlas, PyMongo |
+| **Cloud** | AWS S3, ECR, EC2 |
+| **CI/CD** | GitHub Actions |
+| **Containerization** | Docker |
+| **Visualization** | Matplotlib, Seaborn |
 
 ---
 
 ## 👤 Author
 
 **Ansh Bire**
-- GitHub: [HowWilbert](https://github.com/HowWilbert)
-- LinkedIn: [anshbire](https://www.linkedin.com/in/anshbire)
-- Email: bireansh1@gmail.com
+- 📧 bireansh1@gmail.com
+- 🔗 [GitHub](https://github.com/HowWilbert)
+- 📊 [DagsHub - Experiment Tracking](https://dagshub.com/HowWilbert/Network-Security)
 
 ---
 
-## 📄 License
+## 📜 License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This project is open-source and available for educational and research purposes.
+
+---
+
+<div align="center">
+
+**If you found this project useful, give it a ⭐ on GitHub!**
+
+*Built with 💻 and ☕ by Ansh Bire*
+
+</div>
